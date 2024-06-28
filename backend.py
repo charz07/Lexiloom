@@ -83,10 +83,9 @@ def readingComprehension(textbookParsed, story):
     1. *Question 1*
     2. *Question 2*
     3. *Question 3*
-    \n{story}\n
     """
 
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(story)}]
     response = groq_client.chat.completions.create(
         model="llama3-70b-8192",
         messages=messages,
@@ -161,12 +160,11 @@ def generatefillBlank(textbookParsed):
 
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
-    Translate the provided questions into the language taught in the textbook, leaving all underscores untouched. Output each translated question individually on a new line with no formatting.
-    
-    \n{random_question}\n
+    Translate the provided fill in the blank question into the language taught in the textbook, leaving all underscores untouched. Output each translated question individually on a new line with no formatting.
+
     """
 
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":random_question}]
     response = groq_client.chat.completions.create(
         model="llama3-70b-8192",
         messages=messages,
