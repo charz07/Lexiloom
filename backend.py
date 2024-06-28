@@ -5,7 +5,7 @@ import random
 from groq import Groq
 
 textbookParsed = ""
-groq_client = Groq(api_key="")
+groq_client = Groq(api_key="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")
 
 def setTextBookPath(path):
     global textbookPath, textbookParsed
@@ -102,11 +102,10 @@ def gradeReadingComprehension(textbookParsed, story, answers):
     \n{story}\n
 
     Identify if the answers to the questions are valid (once they are translated into English) and provide ONLY a Yes or No divided by a newline, no formatting based on the provided text
-    \n{answers}\n
     """
 
 
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": system_prompt},{"role": "system", "content": answers}]
     response = groq_client.chat.completions.create(
         model="llama3-70b-8192",
         messages=messages,
@@ -187,10 +186,9 @@ def gradeFillBlank(textbookParsed, fill_blank_question, answer):
     \n{fill_blank_question}\n
 
     Now, given the following answer, please answer whether or not the answer reasonably answers the question in that language. Only answer with either an uppercase YES or NO.
-    \n{answer}\n
     """
 
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": system_prompt},{"role": "system", "content": answer}]
     response = groq_client.chat.completions.create(
         model="llama3-70b-8192",
         messages=messages,
