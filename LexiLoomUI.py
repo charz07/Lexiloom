@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
                              QWidget, QLabel, QFileDialog, QTextEdit, QLineEdit, QStackedWidget)
 from PyQt5.QtGui import QFont, QPalette, QColor
 from PyQt5.QtCore import Qt
-from methods import generateCards, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
+from backend import generateCards, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
 
 # Define fonts
 TITLE_FONT = QFont("Verdana", 24, QFont.Bold)
