@@ -22,7 +22,7 @@ class LexiLoom(QMainWindow):
         palette = QPalette()
         palette.setColor(QPalette.Window, QColor(61, 11, 95))  # Dark purple
         palette.setColor(QPalette.Button, QColor(255, 105, 180))  # Hot pink
-        palette.setColor(QPalette.ButtonText, Qt.white)
+        palette.setColor(QPalette.ButtonText, Qt.black)
         palette.setColor(QPalette.WindowText, Qt.white)
         self.setPalette(palette)
 
