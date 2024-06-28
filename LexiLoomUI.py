@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, 
-                             QWidget, QLabel, QFileDialog, QTextEdit, QLineEdit, QStackedWidget)
-from PyQt5.QtGui import QFont, QPalette, QColor
+                             QWidget, QLabel, QFileDialog, QTextEdit, QLineEdit, QStackedWidget, QSizePolicy)
+from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
 from PyQt5.QtCore import Qt
 from backend import generateCards, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
 
@@ -30,11 +30,24 @@ class LexiLoom(QMainWindow):
         # Main layout
         main_layout = QVBoxLayout()
 
-        # Title
-        title = QLabel("LexiLoom")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(TITLE_FONT)
-        main_layout.addWidget(title)
+        #logo
+        logo = QLabel()
+        pixmap = QPixmap("full_logo_transparent.png")
+        desired_width = 400  # Adjust this value to make the logo larger or smaller
+        desired_height = 400  # Adjust this value to make the logo larger or smaller
+        scaled_pixmap = pixmap.scaled(desired_width, desired_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logo.setPixmap(scaled_pixmap)
+        logo.setAlignment(Qt.AlignCenter)
+        logo.setFixedSize(desired_width, desired_height)  # This ensures the label is the same size as the scaled pixmap
+
+        # Create a wrapper layout to center the logo
+        logo_layout = QHBoxLayout()
+        logo_layout.addStretch()
+        logo_layout.addWidget(logo)
+        logo_layout.addStretch()
+
+        main_layout.addLayout(logo_layout)
+
 
         # File input button
         self.file_button = QPushButton("Upload Linguistics File (.pdf)")
