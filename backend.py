@@ -4,15 +4,15 @@ from pypdf import PdfReader
 import random
 
 
-textbookPath = "data/the-navajo-verb-a-grammar-for-students-and-scholars.pdf"
+textbookPath = "hawaiian.pdf"
 textbookParsed = ""
 openai.api_key = ""
 
 
-# reader = PdfReader(textbookPath)
-# for page in reader.pages:
-#     text = page.extract_text()
-#     textbookParsed+= text + "\n"
+reader = PdfReader(textbookPath)
+for page in reader.pages:
+    text = page.extract_text()
+    textbookParsed+= text + "\n"
 
 def read_csv_to_list(file_path):
     with open(file_path, 'r') as file:
@@ -33,19 +33,12 @@ def generateCards(num):
 def translateCards(list_cards):
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
-    Translate the provided vocabulary words into the language taught in the textbook. Output each translated word individually on a new line with no formatting.
+    Translate the provided vocabulary words into the language taught in the textbook. Output each translated word and ONLY the translated word by itself to a new line, no formatting.
     
     \n{list_cards}\n
     """
 
-    system_prompt_temp= f"""
-    Translate the provided vocabulary words into Latin. Output each translated word individually on a new line with no formatting.
-    
-    \n{list_cards}\n
-    """
-
-
-    messages = [{"role": "system", "content": system_prompt_temp}]
+    messages = [{"role": "system", "content": system_prompt}]
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
@@ -88,19 +81,7 @@ def readingComprehension():
     \n{randStory}\n
     """
 
-    system_prompt_temp= f"""
-    Translate the provided provided story and reading comprehension question into Latin. 
-    Do so in the format:
-
-    *Story*
-    1. *Question 1*
-    2. *Question 2*
-    3. *Question 3*
-    \n{randStory}\n
-    """
-
-
-    messages = [{"role": "system", "content": system_prompt_temp}]
+    messages = [{"role": "system", "content": system_prompt}]
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
@@ -110,7 +91,7 @@ def readingComprehension():
     return response.choices[0].message.content.strip()
 
 def gradeReadingComprehension(answers):
-    system_prompt_temp= f"""
+    system_prompt= f"""
     Given the following story and reading questions
     \n{randStory}\n
 
@@ -119,7 +100,7 @@ def gradeReadingComprehension(answers):
     """
 
 
-    messages = [{"role": "system", "content": system_prompt_temp}]
+    messages = [{"role": "system", "content": system_prompt}]
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
@@ -177,13 +158,7 @@ def generatefillBlank():
     \n{random_question}\n
     """
 
-    system_prompt_temp= f"""
-    Translate the provided questions into the Latin, leaving all underscores untouched. Output each translated question individually on a new line with no formatting.
-    
-    \n{random_question}\n
-    """
-
-    messages = [{"role": "system", "content": system_prompt_temp}]
+    messages = [{"role": "system", "content": system_prompt}]
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
@@ -202,15 +177,6 @@ def gradeFillBlank(answer):
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
     Here is a fill in the blank question in the language you learned:
-    
-    \n{fill_blank_question}\n
-
-    Now, given the following answer, please answer whether or not the answer reasonably answers the question in that language. Only answer with either an uppercase YES or NO.
-    \n{answer}\n
-    """
-
-    system_prompt_temp= f"""
-    Here is a fill in the blank question in Latin:
     
     \n{fill_blank_question}\n
 
