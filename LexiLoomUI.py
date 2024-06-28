@@ -3,11 +3,12 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
                              QWidget, QLabel, QFileDialog, QTextEdit, QLineEdit, QStackedWidget)
 from PyQt5.QtGui import QFont, QPalette, QColor
 from PyQt5.QtCore import Qt
+from methods import generateCards, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
 
 # Define fonts
 TITLE_FONT = QFont("Verdana", 24, QFont.Bold)
 BUTTON_FONT = QFont("Arial", 12)
-TEXT_FONT = QFont("Segoe UI", 11)
+TEXT_FONT = QFont("Sans Serif", 11)
 FLASHCARD_FONT = QFont("Georgia", 18)
 
 class LexiLoom(QMainWindow):
@@ -118,20 +119,23 @@ class ChatbotWidget(QWidget):
 
     def send_message(self):
         user_message = self.input_field.text()
-        self.chat_display.setFont(TEXT_FONT)
+        #self.chat_display.setFont(TEXT_FONT)
         self.chat_display.append(f"You: {user_message}")
         self.input_field.clear()
         
         # Here you would integrate with your chatbot backend
-        bot_response = "This is a placeholder response from the chatbot."
+        bot_response = chatbot(user_message)
         self.chat_display.append(f"Bot: {bot_response}")
 
 class FlashcardWidget(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
+        self.cards = generateCards(10)  # Generate 10 cards, adjust as needed
+        self.translated_cards = translateCards(self.cards)
+        self.current_card_index = 0
         
-        self.card_display = QLabel("Flashcard Front")
+        self.card_display = QLabel()
         self.card_display.setFont(FLASHCARD_FONT)
         self.card_display.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.card_display)
@@ -149,25 +153,40 @@ class FlashcardWidget(QWidget):
         self.setLayout(layout)
 
         self.is_front = True
+        self.show_card()  # Show the first card
+
+    def show_card(self):
+        if self.current_card_index < len(self.cards):
+            current_card_front = self.cards[self.current_card_index]
+            current_card_back = self.translated_cards[self.current_card_index]
+            if self.is_front:
+                self.card_display.setText(current_card_front)
+            else:
+                # Here you might want to implement a way to show the "back" of the card
+                # For now, we'll just show "Back of card"
+                self.card_display.setText(current_card_back)
+        else:
+            self.card_display.setText("No more cards")
+            self.flip_button.setEnabled(False)
+            self.next_button.setEnabled(False)
 
     def flip_card(self):
-        if self.is_front:
-            self.card_display.setText("Flashcard Back")
-        else:
-            self.card_display.setText("Flashcard Front")
         self.is_front = not self.is_front
+        self.show_card()
 
     def next_card(self):
-        # Here you would load the next flashcard
-        self.card_display.setText("Next Flashcard Front")
+        self.current_card_index += 1
         self.is_front = True
+        self.show_card()
 
 class FillBlankWidget(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
+
+        question  = generatefillBlank()
         
-        self.question_label = QLabel("Fill in the blank: The cat ___ on the mat.")
+        self.question_label = QLabel(f"Fill in the blank: {question}")
         layout.addWidget(self.question_label)
 
         self.answer_input = QLineEdit()
@@ -185,22 +204,21 @@ class FillBlankWidget(QWidget):
     def check_answer(self):
         answer = self.answer_input.text()
         # Here you would check the answer against the correct one
-        if answer.lower() == "sat":
-            self.result_label.setText("Correct!")
-        else:
-            self.result_label.setText("Incorrect. Try again.")
+        self.result_label.setText(str(gradeFillBlank(answer)))
 
 class ReadingCompWidget(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
         
+        self.text = readingComprehension()
+
         self.passage = QTextEdit()
         self.passage.setReadOnly(True)
-        self.passage.setText("This is a sample passage for reading comprehension.")
+        self.passage.setText(f"Read the following passage and answer the questions below. \n\n{self.text}")
         layout.addWidget(self.passage)
 
-        self.question_label = QLabel("What is this passage about?")
+        self.question_label = QLabel("Answers to questions:")
         layout.addWidget(self.question_label)
 
         self.answer_input = QLineEdit()
@@ -208,6 +226,8 @@ class ReadingCompWidget(QWidget):
 
         self.submit_button = QPushButton("Submit")
         self.submit_button.clicked.connect(self.check_answer)
+
+        
         layout.addWidget(self.submit_button)
 
         self.result_label = QLabel("")
@@ -218,7 +238,7 @@ class ReadingCompWidget(QWidget):
     def check_answer(self):
         answer = self.answer_input.text()
         # Here you would evaluate the answer
-        self.result_label.setText("Thank you for your answer. It has been recorded.")
+        self.result_label.setText(str(gradeReadingComprehension(answer)))
 
 def main():
     app = QApplication(sys.argv)
