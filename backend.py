@@ -3,16 +3,19 @@ import csv
 from pypdf import PdfReader
 import random
 
-
-textbookPath = "hawaiian.pdf"
 textbookParsed = ""
 openai.api_key = ""
 
+def setTextBookPath(path):
+    global textbookPath, textbookParsed
+    textbookPath = path
+    reader = PdfReader(path)
+    for page in reader.pages:
+        text = page.extract_text()
+        textbookParsed+= text + "\n"
+    return
 
-reader = PdfReader(textbookPath)
-for page in reader.pages:
-    text = page.extract_text()
-    textbookParsed+= text + "\n"
+
 
 def read_csv_to_list(file_path):
     with open(file_path, 'r') as file:
@@ -30,7 +33,7 @@ def generateCards(num):
         randWord = random.choice(vocab_list)
     return list_cards
 
-def translateCards(list_cards):
+def translateCards(textbookParsed, list_cards):
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
     Translate the provided vocabulary words into the language taught in the textbook. Output each translated word and ONLY the translated word by itself to a new line, no formatting.
@@ -63,11 +66,14 @@ def read_csv_to_dict_list(file_path):
                 result.append(row_dict)
     return result
 
-file_path = 'data/storyAndAnswers.csv'
-parsed_data = read_csv_to_dict_list(file_path)
-randStory = random.choice(parsed_data)
 
-def readingComprehension():
+def selectStory():
+    file_path = 'data/storyAndAnswers.csv'
+    parsed_data = read_csv_to_dict_list(file_path)
+    randStory = random.choice(parsed_data)
+    return randStory
+
+def readingComprehension(textbookParsed, story):
 
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
@@ -78,7 +84,7 @@ def readingComprehension():
     1. *Question 1*
     2. *Question 2*
     3. *Question 3*
-    \n{randStory}\n
+    \n{story}\n
     """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -90,10 +96,12 @@ def readingComprehension():
     )
     return response.choices[0].message.content.strip()
 
-def gradeReadingComprehension(answers):
+def gradeReadingComprehension(textbookParsed, story, answers):
     system_prompt= f"""
+    Given the following textbook, learn the language in the material. 
+    \n {textbookParsed}\n
     Given the following story and reading questions
-    \n{randStory}\n
+    \n{story}\n
 
     Identify if the answers to the questions are valid (once they are translated into English) and provide ONLY a Yes or No divided by a newline, no formatting based on the provided text
     \n{answers}\n
@@ -130,8 +138,11 @@ def get_gpt4_response(prompt, context):
     except Exception as e:
         return f"An error occurred: {str(e)}"
 
-def chatbot(user_input):
+def chatbot(textbookParsed, user_input):
     context = f"""You are a language assistant. Your primary role is to help users with language-related queries, such as grammar, vocabulary, translation, and language learning tips.
+    
+    Learn the language in the below textbook. Help the user to learn this language in your prompts.
+    \n{textbookParsed}\n
     """
     
     while True:
@@ -143,9 +154,7 @@ def chatbot(user_input):
         return response 
 
 
-fill_blank_question = ""
-
-def generatefillBlank():
+def generatefillBlank(textbookParsed):
     q_list = read_csv_to_list("data/fillblank.csv")
     list_questions = []
     random_question = random.choice(q_list)
@@ -172,7 +181,7 @@ def generatefillBlank():
 
     return response.choices[0].message.content.strip().split("\n")
 
-def gradeFillBlank(answer):
+def gradeFillBlank(textbookParsed, fill_blank_question, answer):
 
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
