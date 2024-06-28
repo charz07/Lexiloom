@@ -3,18 +3,19 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout
                              QWidget, QLabel, QFileDialog, QTextEdit, QLineEdit, QStackedWidget, QSizePolicy, QSpinBox, QFrame)
 from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
 from PyQt5.QtCore import Qt
-from backend import generateCards, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
+from backend import generateCards, selectStory, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
 
 # Define fonts
 TITLE_FONT = QFont("Roboto", 24, QFont.Bold)
 BUTTON_FONT = QFont("Roboto", 12)
 TEXT_FONT = QFont("Roboto", 11)
 FLASHCARD_FONT = QFont("Roboto", 18)
+TEXTBOOK = ""
 
 # Define colors
 PRIMARY_COLOR = "#5D3FD3"  # Blue-purple shade
 SECONDARY_COLOR = "#5c3f78"  # Light lavender
-TEXT_COLOR = "#FFFFFF"  # Dark gray
+TEXT_COLOR = "#000000"  # Dark gray
 BACKGROUND_COLOR = "#FFFFFF"  # White
 
 class LexiLoom(QMainWindow):
@@ -154,7 +155,7 @@ class ChatbotWidget(QWidget):
         self.chat_display.append(f"You: {user_message}")
         self.input_field.clear()
         
-        bot_response = chatbot(user_message)
+        bot_response = chatbot(TEXTBOOK,user_message)
         self.chat_display.append(f"Bot: {bot_response}")
 
 class FlashcardWidget(QWidget):
@@ -208,7 +209,7 @@ class FlashcardWidget(QWidget):
     def generate_cards(self):
         num_cards = self.num_cards_input.value()
         self.cards = generateCards(num_cards)
-        self.translated_cards = translateCards(self.cards)
+        self.translated_cards = translateCards(TEXTBOOK,self.cards)
         self.current_card_index = 0
         self.is_front = True
         self.show_card()
@@ -247,9 +248,9 @@ class FillBlankWidget(QWidget):
         super().__init__()
         layout = QVBoxLayout()
 
-        question = generatefillBlank()
+        self.question = generatefillBlank(TEXTBOOK)
         
-        self.question_label = QLabel(f"Fill in the blank: {question}")
+        self.question_label = QLabel(f"Fill in the blank: {self.question}")
         layout.addWidget(self.question_label)
 
         self.answer_input = QLineEdit()
@@ -266,14 +267,15 @@ class FillBlankWidget(QWidget):
 
     def check_answer(self):
         answer = self.answer_input.text()
-        self.result_label.setText(str(gradeFillBlank(answer)))
+        self.result_label.setText(str(gradeFillBlank(TEXTBOOK, self.question, answer)))
 
 class ReadingCompWidget(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
         
-        self.text = readingComprehension()
+        self.story = selectStory()
+        self.text = readingComprehension(TEXTBOOK,self.story)
 
         self.passage = QTextEdit()
         self.passage.setReadOnly(True)
@@ -297,7 +299,7 @@ class ReadingCompWidget(QWidget):
 
     def check_answer(self):
         answer = self.answer_input.text()
-        self.result_label.setText(str(gradeReadingComprehension(answer)))
+        self.result_label.setText(str(gradeReadingComprehension(TEXTBOOK, self.story, answer)))
 
 def main():
     app = QApplication(sys.argv)
