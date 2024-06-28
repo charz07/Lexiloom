@@ -2,9 +2,10 @@ import openai
 import csv
 from pypdf import PdfReader
 import random
+from groq import Groq
 
 textbookParsed = ""
-openai.api_key = ""
+groq_client = Groq(api_key="")
 
 def setTextBookPath(path):
     global textbookPath, textbookParsed
@@ -37,15 +38,13 @@ def translateCards(textbookParsed, list_cards):
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
     Translate the provided vocabulary words into the language taught in the textbook. Output each translated word and ONLY the translated word by itself to a new line, no formatting.
-    
-    \n{list_cards}\n
     """
 
-    messages = [{"role": "system", "content": system_prompt}]
-    response = openai.chat.completions.create(
-        model="gpt-4o",
+    messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(list_cards)}]
+    response = groq_client.chat.completions.create(
+        model="llama3-70b-8192",
         messages=messages,
-        temperature=0.3,
+        temperature=0.0,
         max_tokens=4096
     )
     return response.choices[0].message.content.strip().split("\n")
@@ -88,10 +87,10 @@ def readingComprehension(textbookParsed, story):
     """
 
     messages = [{"role": "system", "content": system_prompt}]
-    response = openai.chat.completions.create(
-        model="gpt-4o",
+    response = groq_client.chat.completions.create(
+        model="llama3-70b-8192",
         messages=messages,
-        temperature=0.3,
+        temperature=0.0,
         max_tokens=4096
     )
     return response.choices[0].message.content.strip()
@@ -109,10 +108,10 @@ def gradeReadingComprehension(textbookParsed, story, answers):
 
 
     messages = [{"role": "system", "content": system_prompt}]
-    response = openai.chat.completions.create(
-        model="gpt-4o",
+    response = groq_client.chat.completions.create(
+        model="llama3-70b-8192",
         messages=messages,
-        temperature=0.3,
+        temperature=0.0,
         max_tokens=4096
     )
     grades =  response.choices[0].message.content.strip().split("\n")
@@ -126,8 +125,8 @@ def gradeReadingComprehension(textbookParsed, story, answers):
 
 def get_gpt4_response(prompt, context):
     try:
-        response = openai.chat.completions.create(
-            model="gpt-4o",
+        response = groq_client.chat.completions.create(
+            model="llama3-70b-8192",
             messages=[
                 {"role": "system", "content": "You are a helpful language assistant."},
                 {"role": "user", "content": context},
@@ -168,10 +167,10 @@ def generatefillBlank(textbookParsed):
     """
 
     messages = [{"role": "system", "content": system_prompt}]
-    response = openai.chat.completions.create(
-        model="gpt-4o",
+    response = groq_client.chat.completions.create(
+        model="llama3-70b-8192",
         messages=messages,
-        temperature=0.3,
+        temperature=0.0,
         max_tokens=4096
     )
 
@@ -194,10 +193,10 @@ def gradeFillBlank(textbookParsed, fill_blank_question, answer):
     """
 
     messages = [{"role": "system", "content": system_prompt}]
-    response = openai.chat.completions.create(
-        model="gpt-4o",
+    response = groq_client.chat.completions.create(
+        model="llama3-70b-8192",
         messages=messages,
-        temperature=0.3,
+        temperature=0.0,
         max_tokens=4096
     )
 
