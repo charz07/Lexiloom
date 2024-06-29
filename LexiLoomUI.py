@@ -329,7 +329,7 @@ class ReadingCompWidget(QWidget):
     
     def check_answer(self):
         answer = self.answer_input.text()
-        self.result_label.setText(str(gradeReadingComprehension(TEXTBOOK, self.story, answer)))
+        self.result_label.setText(str(gradeReadingComprehension(TEXTBOOK, self.text, answer)))
 
 def main():
     app = QApplication(sys.argv)
