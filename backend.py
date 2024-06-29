@@ -14,7 +14,8 @@ def setTextBookPath(path):
     for page in reader.pages:
         text = page.extract_text()
         textbookParsed+= text + "\n"
-    return
+
+    return textbookParsed
 
 
 
@@ -35,9 +36,10 @@ def generateCards(num):
     return list_cards
 
 def translateCards(textbookParsed, list_cards):
+
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
-    Translate the provided vocabulary words into the language taught in the textbook. Output each translated word and ONLY the translated word by itself to a new line, no formatting.
+    Translate the provided vocabulary words into the language in the textbook. Output each translated word and ONLY the translated word by itself to a new line, no formatting.
     """
 
     messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(list_cards)}]
@@ -73,7 +75,7 @@ def selectStory():
     return randStory
 
 def readingComprehension(textbookParsed, story):
-
+    print("->"+textbookParsed +"<-")
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
     Translate the provided story and reading comprehension questions into the language taught in the textbook.
@@ -136,6 +138,7 @@ def get_gpt4_response(prompt, context):
         return f"An error occurred: {str(e)}"
 
 def chatbot(textbookParsed, user_input):
+    print (textbookParsed)
     context = f"""You are a language assistant. Your primary role is to help users with language-related queries, such as grammar, vocabulary, translation, and language learning tips.
     
     Learn the language in the below textbook. Help the user to learn this language in your prompts.
@@ -201,6 +204,3 @@ def gradeFillBlank(textbookParsed, fill_blank_question, answer):
         return True
     else:
          return False
-
-
-
