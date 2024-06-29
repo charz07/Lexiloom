@@ -39,7 +39,9 @@ def translateCards(textbookParsed, list_cards):
 
     system_prompt= f"""Given the following textbook, learn the language in the material. 
     \n {textbookParsed}\n
-    Translate the provided vocabulary words into the language in the textbook. Output each translated word and ONLY the translated word by itself to a new line, no formatting.
+    Translate the provided vocabulary words into the language in the textbook. 
+    Output each translated word and ONLY the translated word by itself to a new line, no formatting.
+    Do not include any labels, just have the list of words by itself.
     """
 
     messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(list_cards)}]
@@ -85,6 +87,8 @@ def readingComprehension(textbookParsed, story):
     1. *Question 1*
     2. *Question 2*
     3. *Question 3*
+
+    Do not include any descriptions, labels, or footnotes.
     """
 
     messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(story)}]
@@ -103,7 +107,8 @@ def gradeReadingComprehension(textbookParsed, story, answers):
     Given the following story and reading questions
     \n{story}\n
 
-    Identify if the answers to the questions are valid (once they are translated into English) and provide ONLY a Yes or No divided by a newline, no formatting based on the provided text
+    Identify if the answers to the questions are valid (once they are translated into English) and provide ONLY a Yes or No divided by a newline, no formatting based on the provided text.
+    There should be 3 questions, and 3 grades.
     """
 
 
@@ -188,7 +193,8 @@ def gradeFillBlank(textbookParsed, fill_blank_question, answer):
     
     \n{fill_blank_question}\n
 
-    Now, given the following answer, please answer whether or not the answer reasonably answers the question in that language. Only answer with either an uppercase YES or NO.
+    Now, given the following answer, please answer whether or not the answer reasonably answers the question in that language. 
+    Please give a very brief explanation as to why the answer is correct or incorrect.
     """
 
     messages = [{"role": "system", "content": system_prompt},{"role": "system", "content": answer}]
@@ -199,8 +205,4 @@ def gradeFillBlank(textbookParsed, fill_blank_question, answer):
         max_tokens=4096
     )
 
-    response_content = response.choices[0].message.content.strip().upper()
-    if response_content == "YES":
-        return True
-    else:
-         return False
+    return response.choices[0].message.content.strip()
