@@ -23,6 +23,7 @@ class LexiLoom(QMainWindow):
         super().__init__()
         self.setWindowTitle("LexiLoom")
         self.setGeometry(100, 100, 800, 600)
+        self.setFixedSize(800, 600)
         self.setup_ui()
 
     def setup_ui(self):
@@ -259,6 +260,7 @@ class FillBlankWidget(QWidget):
         self.question = "Press Generate"
         
         self.question_label = QLabel(f"Fill in the blank: {self.question}")
+        self.question_label.setWordWrap(True)
         layout.addWidget(self.question_label)
 
         self.answer_input = QLineEdit()
@@ -267,7 +269,7 @@ class FillBlankWidget(QWidget):
         self.submit_button = QPushButton("Submit")
         self.submit_button.clicked.connect(self.check_answer)
         layout.addWidget(self.submit_button)
-
+    
         self.result_label = QLabel("")
         layout.addWidget(self.result_label)
 
@@ -282,6 +284,7 @@ class FillBlankWidget(QWidget):
     def check_answer(self):
         answer = self.answer_input.text()
         self.result_label.setText(str(gradeFillBlank(TEXTBOOK, self.question, answer)))
+        self.result_label.setWordWrap(True)
 
 class ReadingCompWidget(QWidget):
     def __init__(self):
