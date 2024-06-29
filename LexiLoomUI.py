@@ -248,9 +248,12 @@ class FillBlankWidget(QWidget):
         super().__init__()
         layout = QVBoxLayout()
 
-        self.question = generatefillBlank(TEXTBOOK)
-        
-        self.question_label = QLabel(f"Fill in the blank: {self.question}")
+        self.generate_button = QPushButton("Generate Fill in the Blank")
+        self.generate_button.setFont(BUTTON_FONT)
+        self.generate_button.clicked.connect(self.generate_question)
+        layout.addWidget(self.generate_button)
+
+        self.question_label = QLabel("Fill in the blank:")
         layout.addWidget(self.question_label)
 
         self.answer_input = QLineEdit()
@@ -264,25 +267,44 @@ class FillBlankWidget(QWidget):
         layout.addWidget(self.result_label)
 
         self.setLayout(layout)
+        
+        self.pdf_content = None
+        self.current_question = None
+
+    def set_pdf_content(self, content):
+        self.pdf_content = content
+
+    def generate_question(self):
+        if self.pdf_content:
+            self.current_question = generatefillBlank(self.pdf_content)
+            self.question_label.setText(f"Fill in the blank: {self.current_question}")
+            self.answer_input.clear()
+            self.result_label.clear()
+        else:
+            self.question_label.setText("Please upload a PDF file first.")
 
     def check_answer(self):
-        answer = self.answer_input.text()
-        self.result_label.setText(str(gradeFillBlank(TEXTBOOK, self.question, answer)))
+        if self.current_question:
+            answer = self.answer_input.text()
+            self.result_label.setText(str(gradeFillBlank(answer, self.current_question)))
+        else:
+            self.result_label.setText("Please generate a question first.")
 
 class ReadingCompWidget(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
         
-        self.story = selectStory()
-        self.text = readingComprehension(TEXTBOOK,self.story)
+        self.generate_button = QPushButton("Generate Reading Comprehension")
+        self.generate_button.setFont(BUTTON_FONT)
+        self.generate_button.clicked.connect(self.generate_passage)
+        layout.addWidget(self.generate_button)
 
         self.passage = QTextEdit()
         self.passage.setReadOnly(True)
-        self.passage.setText(f"Read the following passage and answer the questions below. \n\n{self.text}")
         layout.addWidget(self.passage)
 
-        self.question_label = QLabel("Answers to questions:")
+        self.question_label = QLabel("Answer:")
         layout.addWidget(self.question_label)
 
         self.answer_input = QLineEdit()
@@ -296,10 +318,28 @@ class ReadingCompWidget(QWidget):
         layout.addWidget(self.result_label)
 
         self.setLayout(layout)
+        
+        self.pdf_content = None
+        self.current_passage = None
+
+    def set_pdf_content(self, content):
+        self.pdf_content = content
+
+    def generate_passage(self):
+        if self.pdf_content:
+            self.current_passage = readingComprehension(self.pdf_content)
+            self.passage.setText(f"Read the following passage and answer the questions below. \n\n{self.current_passage}")
+            self.answer_input.clear()
+            self.result_label.clear()
+        else:
+            self.passage.setText("Please upload a PDF file first.")
 
     def check_answer(self):
-        answer = self.answer_input.text()
-        self.result_label.setText(str(gradeReadingComprehension(TEXTBOOK, self.story, answer)))
+        if self.current_passage:
+            answer = self.answer_input.text()
+            self.result_label.setText(str(gradeReadingComprehension(answer, self.current_passage)))
+        else:
+            self.result_label.setText("Please generate a passage first.")
 
 def main():
     app = QApplication(sys.argv)
