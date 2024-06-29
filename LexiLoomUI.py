@@ -1,211 +1,339 @@
-import openai
-import csv
-from pypdf import PdfReader
-import random
-from groq import Groq
+import sys
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, 
+                             QWidget, QLabel, QFileDialog, QTextEdit, QLineEdit, QStackedWidget, QSizePolicy, QSpinBox, QFrame)
+from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
+from PyQt5.QtCore import Qt
+from backend import setTextBookPath, generateCards, selectStory, translateCards, readingComprehension, gradeReadingComprehension, chatbot, generatefillBlank, gradeFillBlank
 
-textbookParsed = ""
-groq_client = Groq(api_key="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")
+# Define fonts
+TITLE_FONT = QFont("Roboto", 24, QFont.Bold)
+BUTTON_FONT = QFont("Roboto", 12)
+TEXT_FONT = QFont("Roboto", 11)
+FLASHCARD_FONT = QFont("Roboto", 18)
+TEXTBOOK = ""
 
-def setTextBookPath(path):
-    global textbookPath, textbookParsed
-    textbookPath = path
-    reader = PdfReader(path)
-    for page in reader.pages:
-        text = page.extract_text()
-        textbookParsed+= text + "\n"
+# Define colors
+PRIMARY_COLOR = "#5D3FD3"  # Blue-purple shade
+SECONDARY_COLOR = "#5c3f78"  # Light lavender
+TEXT_COLOR = "#000000"  # Dark gray
+BACKGROUND_COLOR = "#FFFFFF"  # White
 
-    return textbookParsed
+class LexiLoom(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("LexiLoom")
+        self.setGeometry(100, 100, 800, 600)
+        self.setup_ui()
 
+    def setup_ui(self):
+        # Set up theme
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                background-color: {BACKGROUND_COLOR};
+            }}
+            QPushButton {{
+                background-color: {PRIMARY_COLOR};
+                color: white;
+                border: none;
+                padding: 10px;
+                border-radius: 5px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {QColor(PRIMARY_COLOR).lighter(110).name()};
+            }}
+            QLabel, QTextEdit, QLineEdit {{
+                color: {TEXT_COLOR};
+            }}
+            QTextEdit, QLineEdit {{
+                border: 1px solid {PRIMARY_COLOR};
+                border-radius: 5px;
+                padding: 5px;
+            }}
+        """)
 
+        # Main layout
+        main_layout = QVBoxLayout()
 
-def read_csv_to_list(file_path):
-    with open(file_path, 'r') as file:
-        return file.read().splitlines()
+        # Logo
+        logo = QLabel()
+        pixmap = QPixmap("logo-transparent.png")
+        desired_width = 300
+        desired_height = 300
+        scaled_pixmap = pixmap.scaled(desired_width, desired_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logo.setPixmap(scaled_pixmap)
+        logo.setAlignment(Qt.AlignCenter)
+        logo.setFixedSize(desired_width, desired_height)
 
+        logo_layout = QHBoxLayout()
+        logo_layout.addStretch()
+        logo_layout.addWidget(logo)
+        logo_layout.addStretch()
 
-def generateCards(num):
-    vocab_list = read_csv_to_list("data/vocab.csv")
+        main_layout.addLayout(logo_layout)
 
-    list_cards = []
-    randWord = random.choice(vocab_list)
-    for i in range(num):
-        if randWord not in list_cards:
-            list_cards.append(randWord)
-        randWord = random.choice(vocab_list)
-    return list_cards
+        # File input button
+        self.file_button = QPushButton("Upload Linguistics File (.pdf)")
+        self.file_button.setFont(BUTTON_FONT)
+        self.file_button.clicked.connect(self.upload_file)
+        main_layout.addWidget(self.file_button)
 
-def translateCards(textbookParsed, list_cards):
+        # Function buttons
+        button_layout = QHBoxLayout()
+        self.chatbot_button = QPushButton("Assistance Chatbot")
+        self.flashcard_button = QPushButton("Flashcards")
+        self.fill_blank_button = QPushButton("Fill in the Blank")
+        self.reading_comp_button = QPushButton("Reading Comprehension")
 
-    system_prompt= f"""Given the following textbook, learn the language in the material. 
-    \n {textbookParsed}\n
-    Translate the provided vocabulary words into the language in the textbook. 
-    Output each translated word and ONLY the translated word by itself to a new line, no formatting.
-    Do not include any labels, just have the list of words by itself.
-    """
+        for button in [self.chatbot_button, self.flashcard_button, self.fill_blank_button, self.reading_comp_button]:
+            button.setFont(BUTTON_FONT)
+            button.setEnabled(False)
+            button_layout.addWidget(button)
 
-    messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(list_cards)}]
-    response = groq_client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=0.0,
-        max_tokens=4096
-    )
-    return response.choices[0].message.content.strip().split("\n")
+        main_layout.addLayout(button_layout)
 
-
-def read_csv_to_dict_list(file_path):
-    result = []
-    with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
-        csv_reader = csv.reader(csvfile)
-        for row in csv_reader:
-            if len(row) == 4:  # Ensure the row has 4 columns
-                row_dict = {
-                    "story": row[0],
-                    "question1": row[1],
-                    "question2": row[2],
-                    "question3": row[3]
-                }
-                result.append(row_dict)
-    return result
-
-
-def selectStory():
-    file_path = 'data/storyAndAnswers.csv'
-    parsed_data = read_csv_to_dict_list(file_path)
-    randStory = random.choice(parsed_data)
-    return randStory
-
-def readingComprehension(textbookParsed, story):
-    print("->"+textbookParsed +"<-")
-    system_prompt= f"""Given the following textbook, learn the language in the material. 
-    \n {textbookParsed}\n
-    Translate the provided story and reading comprehension questions into the language taught in the textbook.
-    Do so in the format:
-
-    *Story*
-    1. *Question 1*
-    2. *Question 2*
-    3. *Question 3*
-
-    Do not include any descriptions, labels, or footnotes.
-    """
-
-    messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":str(story)}]
-    response = groq_client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=0.0,
-        max_tokens=4096
-    )
-    return response.choices[0].message.content.strip()
-
-def gradeReadingComprehension(textbookParsed, story, answers):
-    system_prompt= f"""
-    Given the following textbook, learn the language in the material. 
-    \n {textbookParsed}\n
-    Given the following story and reading questions
-    \n{story}\n
-
-    Identify if the answers to the questions are valid (once they are translated into English) and provide ONLY a Yes or No divided by a newline, no formatting based on the provided text.
-    There should be 3 questions, and 3 grades.
-    """
-
-
-    messages = [{"role": "system", "content": system_prompt},{"role": "system", "content": answers}]
-    response = groq_client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=0.0,
-        max_tokens=4096
-    )
-    grades =  response.choices[0].message.content.strip().split("\n")
-    grade_list = []
-    for grade in grades:
-        if grade == "Yes":
-            grade_list.append(True)
-        else:
-            grade_list.append(False)
-    return grade_list
-
-def get_gpt4_response(prompt, context):
-    try:
-        response = groq_client.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=[
-                {"role": "system", "content": "You are a helpful language assistant."},
-                {"role": "user", "content": context},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
-
-def chatbot(textbookParsed, user_input):
-    print (textbookParsed)
-    context = f"""You are a language assistant. Your primary role is to help users with language-related queries, such as grammar, vocabulary, translation, and language learning tips.
-    
-    Learn the language in the below textbook. Help the user to learn this language in your prompts.
-    \n{textbookParsed}\n
-    """
-    
-    while True:
-        if user_input.lower() in ['exit', 'quit', 'bye']:
-            print("Language Assistant: Goodbye! Have a great day!")
-            break
+        # Create stacked widget for different pages
+        self.stacked_widget = QStackedWidget()
         
-        response = get_gpt4_response(user_input, context)
-        return response 
+        # Create pages
+        self.main_page = QWidget()
+        self.main_page.setLayout(main_layout)
+        self.chatbot_page = ChatbotWidget()
+        self.flashcard_page = FlashcardWidget()
+        self.fill_blank_page = FillBlankWidget()
+        self.reading_comp_page = ReadingCompWidget()
+
+        # Add pages to stacked widget
+        self.stacked_widget.addWidget(self.main_page)
+        self.stacked_widget.addWidget(self.chatbot_page)
+        self.stacked_widget.addWidget(self.flashcard_page)
+        self.stacked_widget.addWidget(self.fill_blank_page)
+        self.stacked_widget.addWidget(self.reading_comp_page)
+
+        # Set central widget
+        self.setCentralWidget(self.stacked_widget)
+
+        # Connect buttons
+        self.chatbot_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.chatbot_page))
+        self.flashcard_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.flashcard_page))
+        self.fill_blank_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.fill_blank_page))
+        self.reading_comp_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.reading_comp_page))
+
+        # Add return buttons to each page
+        for page in [self.chatbot_page, self.flashcard_page, self.fill_blank_page, self.reading_comp_page]:
+            return_button = QPushButton("Return to Main Menu")
+            return_button.setFont(BUTTON_FONT)
+            return_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.main_page))
+            page.layout().addWidget(return_button)
+
+    def upload_file(self):
+        global TEXTBOOK
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open PDF File", "", "PDF Files (*.pdf)")
+        if file_name:
+            print(f"File uploaded: {file_name}")
+            # Here you would process the PDF file
+            TEXTBOOK = setTextBookPath(file_name)
+            for button in [self.chatbot_button, self.flashcard_button, self.fill_blank_button, self.reading_comp_button]:
+                button.setEnabled(True)
+
+class ChatbotWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        
+        self.chat_display = QTextEdit()
+        self.chat_display.setReadOnly(True)
+        layout.addWidget(self.chat_display)
+
+        self.input_field = QLineEdit()
+        self.input_field.returnPressed.connect(self.send_message)
+        layout.addWidget(self.input_field)
+
+        self.setLayout(layout)
+
+    def send_message(self):
+        user_message = self.input_field.text()
+        self.chat_display.append(f"You: {user_message}")
+        self.input_field.clear()
+        
+        bot_response = chatbot(TEXTBOOK,user_message)
+        self.chat_display.append(f"Bot: {bot_response}")
+
+class FlashcardWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        
+        # Add input for number of flashcards
+        self.num_cards_layout = QHBoxLayout()
+        self.num_cards_label = QLabel("Number of flashcards:")
+        self.num_cards_input = QSpinBox()
+        self.num_cards_input.setRange(1, 100)
+        self.num_cards_input.setValue(10)
+        self.generate_button = QPushButton("Generate")
+        self.generate_button.clicked.connect(self.generate_cards)
+        
+        self.num_cards_layout.addWidget(self.num_cards_label)
+        self.num_cards_layout.addWidget(self.num_cards_input)
+        self.num_cards_layout.addWidget(self.generate_button)
+        layout.addLayout(self.num_cards_layout)
+
+        self.card_display = QLabel()
+        self.card_display.setText("Click generate to begin")
+        self.card_display.setFont(FLASHCARD_FONT)
+        self.card_display.setAlignment(Qt.AlignCenter)
+        self.card_display.setStyleSheet(f"""
+            background-color: {SECONDARY_COLOR};
+            border-radius: 10px;
+            padding: 20px;
+        """)
+        layout.addWidget(self.card_display)
+
+        button_layout = QHBoxLayout()
+        self.flip_button = QPushButton("Flip")
+        self.next_button = QPushButton("Next Card")
+        self.reset_button = QPushButton("Reset")
+
+        for button in [self.flip_button, self.next_button, self.reset_button]:
+            button.setFont(BUTTON_FONT)
+            button_layout.addWidget(button)
+
+        self.flip_button.clicked.connect(self.flip_card)
+        self.next_button.clicked.connect(self.next_card)
+        self.reset_button.clicked.connect(self.reset_cards)
+
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)
 
 
-def generatefillBlank(textbookParsed):
-    q_list = read_csv_to_list("data/fillblank.csv")
-    list_questions = []
-    random_question = random.choice(q_list)
-    fill_blank_question = random_question
+    def generate_cards(self):
+        print("generatecards")
+        num_cards = self.num_cards_input.value()
+        self.cards = generateCards(num_cards)
+        self.translated_cards = translateCards(TEXTBOOK,self.cards)
+        self.current_card_index = 0
+        self.is_front = True
+        self.show_card()
 
-    system_prompt= f"""Given the following textbook, learn the language in the material. 
-    \n {textbookParsed}\n
-    Translate the provided fill in the blank question into the language taught in the textbook, leaving all underscores untouched. Output each translated question individually on a new line with no formatting.
+    def show_card(self):
+        if self.current_card_index < len(self.cards):
+            current_card_front = self.cards[self.current_card_index]
+            current_card_back = self.translated_cards[self.current_card_index]
+            if self.is_front:
+                self.card_display.setText(current_card_front)
+            else:
+                self.card_display.setText(current_card_back)
+        else:
+            self.card_display.setText("No more cards")
+            self.flip_button.setEnabled(False)
+            self.next_button.setEnabled(False)
 
-    """
+    def flip_card(self):
+        self.is_front = not self.is_front
+        self.show_card()
 
-    messages = [{"role": "system", "content": system_prompt},{"role":"user", "content":random_question}]
-    response = groq_client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=0.0,
-        max_tokens=4096
-    )
+    def next_card(self):
+        self.current_card_index += 1
+        self.is_front = True
+        self.show_card()
 
+    def reset_cards(self):
+        self.current_card_index = 0
+        self.is_front = True
+        self.flip_button.setEnabled(True)
+        self.next_button.setEnabled(True)
+        self.show_card()
+
+class FillBlankWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        # Add generate button
+        self.generate_button = QPushButton("Generate New Question")
+        self.generate_button.setFont(BUTTON_FONT)
+        self.generate_button.clicked.connect(self.generate_new_question)
+        layout.addWidget(self.generate_button)
+
+        self.question = "Press Generate"
+        
+        self.question_label = QLabel(f"Fill in the blank: {self.question}")
+        layout.addWidget(self.question_label)
+
+        self.answer_input = QLineEdit()
+        layout.addWidget(self.answer_input)
+
+        self.submit_button = QPushButton("Submit")
+        self.submit_button.clicked.connect(self.check_answer)
+        layout.addWidget(self.submit_button)
+
+        self.result_label = QLabel("")
+        layout.addWidget(self.result_label)
+
+        self.setLayout(layout)
+
+    def generate_new_question(self):
+        self.question = generatefillBlank(TEXTBOOK)
+        self.question_label.setText(f"Fill in the blank: {self.question}")
+        self.answer_input.clear()
+        self.result_label.clear()
+
+    def check_answer(self):
+        answer = self.answer_input.text()
+        self.result_label.setText(str(gradeFillBlank(TEXTBOOK, self.question, answer)))
+
+class ReadingCompWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        
+        # Add generate button
+        self.generate_button = QPushButton("Generate New Passage")
+        self.generate_button.setFont(BUTTON_FONT)
+        self.generate_button.clicked.connect(self.generate_new_passage)
+        layout.addWidget(self.generate_button)
+
+        self.story = selectStory()
+        self.text = "Press Generate"
+
+        self.passage = QTextEdit()
+        self.passage.setReadOnly(True)
+        self.passage.setText(f"Read the following passage and answer the questions below. \n\n{self.text}")
+        layout.addWidget(self.passage)
+
+        self.question_label = QLabel("Answers to questions:")
+        layout.addWidget(self.question_label)
+
+        self.answer_input = QLineEdit()
+        layout.addWidget(self.answer_input)
+
+        self.submit_button = QPushButton("Submit")
+        self.submit_button.clicked.connect(self.check_answer)
+        layout.addWidget(self.submit_button)
+
+        self.result_label = QLabel("")
+        layout.addWidget(self.result_label)
+
+        self.setLayout(layout)
     
-    response_content = response.choices[0].message.content.strip().split("\n")
-    response_text = "\n".join(response_content)
-
-    return response.choices[0].message.content.strip().split("\n")
-
-def gradeFillBlank(textbookParsed, fill_blank_question, answer):
-
-    system_prompt= f"""Given the following textbook, learn the language in the material. 
-    \n {textbookParsed}\n
-    Here is a fill in the blank question in the language you learned:
+    def generate_new_passage(self):
+        self.story = selectStory()
+        self.text = readingComprehension(TEXTBOOK, self.story)
+        self.passage.setText(f"Read the following passage and answer the questions below:\n\n{self.text}")
+        self.answer_input.clear()
+        self.result_label.clear()
     
-    \n{fill_blank_question}\n
+    def check_answer(self):
+        answer = self.answer_input.text()
+        self.result_label.setText(str(gradeReadingComprehension(TEXTBOOK, self.story, answer)))
 
-    Now, given the following answer, please answer whether or not the answer reasonably answers the question in that language. Only answer with either an uppercase YES or NO.
-    """
+def main():
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")  # Use Fusion style for a more modern look
+    lexiloom = LexiLoom()
+    lexiloom.show()
+    sys.exit(app.exec_())
 
-    messages = [{"role": "system", "content": system_prompt},{"role": "system", "content": answer}]
-    response = groq_client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=0.0,
-        max_tokens=4096
-    )
-
-    response_content = response.choices[0].message.content.strip().upper()
-    if response_content == "YES":
-        return True
-    else:
-         return False
+if __name__ == '__main__':
+    main()
